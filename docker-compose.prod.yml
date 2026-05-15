@@ -1,0 +1,42 @@
+# Production deployment.
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Before deploying:
+#   1. Copy api/.env.example to api/.env.production and fill in all values.
+#   2. Make sure APP_KEY is set (generate one: php artisan key:generate --show).
+#   3. Set FRONTEND_URL to your public domain.
+#   4. Set ALLOWED_UNLIMITED_ACTIONS=false.
+
+services:
+  api:
+    build:
+      context: ./api
+    # No external port mapping — only reachable from the internal Docker network.
+    # Traffic flows: internet → nginx (ui:80) → api:8000 (internal).
+    expose:
+      - "8000"
+    env_file:
+      - ./api/.env.production
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      LOG_CHANNEL: stderr
+      ALLOW_UNLIMITED_ACTIONS: "false"
+    volumes:
+      - api_storage:/app/storage
+    restart: unless-stopped
+
+  ui:
+    build:
+      context: ./ui
+      target: production
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  api_storage:
