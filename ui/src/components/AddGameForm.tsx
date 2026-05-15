@@ -7,7 +7,7 @@ type SearchResult =
   | { kind: 'board'; item: BoardGameItem };
 
 interface AddGameFormProps {
-  onAdd: (payload: { name: string; steamAppId: number }) => Promise<unknown>;
+  onAdd: (payload: { name: string; steamAppId: number; imageUrl?: string }) => Promise<unknown>;
   disabled: boolean;
   mode: 'video' | 'board';
 }
@@ -68,14 +68,14 @@ export function AddGameForm({ onAdd, disabled, mode }: AddGameFormProps) {
     debounceRef.current = setTimeout(() => search(value, mode), 300);
   };
 
-  const submit = async (name: string, steamAppId: number) => {
+  const submit = async (name: string, steamAppId: number, imageUrl?: string) => {
     setShowDropdown(false);
     setResults([]);
     setNoResults(false);
     setSubmitting(true);
 
     try {
-      await onAdd({ name, steamAppId });
+      await onAdd({ name, steamAppId, imageUrl });
       setQuery('');
     } finally {
       setSubmitting(false);
@@ -86,7 +86,7 @@ export function AddGameForm({ onAdd, disabled, mode }: AddGameFormProps) {
     if (result.kind === 'steam') {
       submit(result.item.name, result.item.id);
     } else {
-      submit(result.item.name, 0);
+      submit(result.item.name, 0, result.item.image_url);
     }
   };
 

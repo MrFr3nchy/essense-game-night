@@ -30,9 +30,11 @@ class GameController
                 $game['name'] = html_entity_decode($game['name'] ?? '', ENT_QUOTES | ENT_HTML5, 'UTF-8');
                 $steamAppId = Cache::get('steam_app:' . mb_strtolower($game['name']), 0);
                 $game['steam_app_id'] = $steamAppId;
-                $game['steam_image_url'] = $steamAppId
-                    ? "https://cdn.akamai.steamstatic.com/steam/apps/{$steamAppId}/capsule_231x87.jpg"
-                    : null;
+                if ($steamAppId) {
+                    $game['steam_image_url'] = "https://cdn.akamai.steamstatic.com/steam/apps/{$steamAppId}/capsule_231x87.jpg";
+                } else {
+                    $game['steam_image_url'] = Cache::get('board_image:' . mb_strtolower($game['name']));
+                }
                 return $game;
             }, $games);
 
@@ -64,10 +66,12 @@ class GameController
         $request->validate([
             'name' => 'required|string|max:255',
             'steam_app_id' => 'nullable|integer',
+            'image_url' => 'nullable|string|max:2048',
         ]);
 
         $name = trim($request->input('name'));
         $steamAppId = $request->integer('steam_app_id') ?: null;
+        $imageUrl = $request->input('image_url');
         $userId = $request->input('voter_id');
 
         if ($this->limiter->hasActedToday($userId)) {
@@ -94,6 +98,10 @@ class GameController
 
             if ($steamAppId) {
                 Cache::forever('steam_app:' . mb_strtolower($name), $steamAppId);
+            }
+
+            if ($imageUrl && !$steamAppId) {
+                Cache::forever('board_image:' . mb_strtolower($name), $imageUrl);
             }
 
             $this->limiter->recordAction($userId, 'add', $gameId);

@@ -155,7 +155,7 @@ function App() {
     }
   };
 
-  const handleAddGame = async (payload: { name: string; steamAppId: number }) => {
+  const handleAddGame = async (payload: { name: string; steamAppId: number; imageUrl?: string }) => {
     try {
       const result = await addGame(payload);
       setToast({ message: result.message, type: 'success' });

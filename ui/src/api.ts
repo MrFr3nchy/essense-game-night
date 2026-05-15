@@ -34,10 +34,14 @@ class ApiClient {
     return this.request<GamesResponse>('/games');
   }
 
-  addGame(name: string, steamAppId: number = 0) {
+  addGame(name: string, steamAppId: number = 0, imageUrl?: string) {
     return this.request<{ id: number; message: string }>('/games', {
       method: 'POST',
-      body: JSON.stringify({ name, steam_app_id: steamAppId || undefined }),
+      body: JSON.stringify({
+        name,
+        steam_app_id: steamAppId || undefined,
+        image_url: imageUrl || undefined,
+      }),
     });
   }
 

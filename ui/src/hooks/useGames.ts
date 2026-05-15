@@ -38,8 +38,8 @@ export function useGames() {
     fetchGames();
   }, [fetchGames]);
 
-  const addGame = async (payload: { name: string; steamAppId: number }) => {
-    const result = await api.addGame(payload.name, payload.steamAppId);
+  const addGame = async (payload: { name: string; steamAppId: number; imageUrl?: string }) => {
+    const result = await api.addGame(payload.name, payload.steamAppId, payload.imageUrl);
     await fetchGames(true);
     return result;
   };
