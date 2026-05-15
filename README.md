@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 # essense-game-night
-Essense Designs game night coding challenge with game searching, voting and game removal.
-=======
-# Game Night — Vote on Games
 
 A full-stack game voting app built for the Essense of Australia code challenge. Employees can suggest games for the office library and vote on the ones they want most.
 
@@ -128,4 +124,3 @@ Required environment variables in `api/.env.production`:
 | `DELETE` | `/api/games/{id}/vote` | Remove your vote |
 | `DELETE` | `/api/games/{id}` | Remove a game |
 | `GET` | `/api/me` | Current user status + daily action |
->>>>>>> 59cf84e (Initial Commit)
