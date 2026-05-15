@@ -16,8 +16,8 @@ export function useGames() {
       setFetching(true);
     }
     try {
-      if (!isAction) setError(null);
       const data = await api.listGames();
+      if (!isAction) setError(null);
       setGames(data.games);
       setDailyAction(data.daily_action);
       setLastGameId(data.last_game_id ?? 0);
@@ -35,7 +35,8 @@ export function useGames() {
   }, []);
 
   useEffect(() => {
-    fetchGames();
+    const load = async () => { await fetchGames(); };
+    void load();
   }, [fetchGames]);
 
   const addGame = async (payload: { name: string; steamAppId: number; imageUrl?: string }) => {
