@@ -44,14 +44,14 @@ class GameApiClientTest extends TestCase
         $this->assertSame([], $games);
     }
 
-    public function test_list_games_sends_api_key_as_query_parameter(): void
+    public function test_list_games_sends_api_key_in_request_body(): void
     {
         Http::fake(['*/games/list*' => Http::response(['games' => []], 200)]);
 
         $this->client->listGames();
 
         Http::assertSent(function (Request $request) {
-            return str_contains($request->url(), 'api_key=test-api-key');
+            return $request->data()['api_key'] === 'test-api-key';
         });
     }
 
@@ -66,36 +66,25 @@ class GameApiClientTest extends TestCase
 
     // ── addGame ────────────────────────────────────────────────────────────────
 
-    public function test_add_game_sends_name_as_query_parameter(): void
+    public function test_add_game_sends_name_in_request_body(): void
     {
         Http::fake(['*/games/add*' => Http::response(['id' => 10, 'name' => 'Hades'], 200)]);
 
         $this->client->addGame('Hades');
 
         Http::assertSent(function (Request $request) {
-            return str_contains($request->url(), 'name=Hades');
+            return $request->data()['name'] === 'Hades';
         });
     }
 
-    public function test_add_game_with_steam_app_id_includes_it_in_query(): void
+    public function test_add_game_does_not_send_steam_app_id_to_essense_api(): void
     {
         Http::fake(['*/games/add*' => Http::response(['id' => 10], 200)]);
 
-        $this->client->addGame('Hades', 1145360);
+        $this->client->addGame('Hades');
 
         Http::assertSent(function (Request $request) {
-            return str_contains($request->url(), 'steam_app_id=1145360');
-        });
-    }
-
-    public function test_add_game_without_steam_app_id_omits_it_from_query(): void
-    {
-        Http::fake(['*/games/add*' => Http::response(['id' => 10], 200)]);
-
-        $this->client->addGame('Custom Game');
-
-        Http::assertSent(function (Request $request) {
-            return !str_contains($request->url(), 'steam_app_id');
+            return !array_key_exists('steam_app_id', $request->data());
         });
     }
 
@@ -111,47 +100,108 @@ class GameApiClientTest extends TestCase
 
     // ── vote ───────────────────────────────────────────────────────────────────
 
-    public function test_vote_sends_correct_game_id(): void
+    public function test_vote_sends_correct_game_id_in_body(): void
     {
         Http::fake(['*/games/vote*' => Http::response(['success' => true], 200)]);
 
         $this->client->vote(7);
 
-        Http::assertSent(fn(Request $r) => str_contains($r->url(), 'id=7'));
+        Http::assertSent(fn(Request $r) => $r->data()['id'] === 7);
     }
 
     // ── removeVote ─────────────────────────────────────────────────────────────
 
-    public function test_remove_vote_sends_correct_game_id(): void
+    public function test_remove_vote_sends_correct_game_id_in_body(): void
     {
         Http::fake(['*/games/removeVote*' => Http::response([], 200)]);
 
         $this->client->removeVote(7);
 
-        Http::assertSent(fn(Request $r) => str_contains($r->url(), 'id=7'));
+        Http::assertSent(fn(Request $r) => $r->data()['id'] === 7);
     }
 
     // ── removeGame ─────────────────────────────────────────────────────────────
 
-    public function test_remove_game_sends_correct_game_id(): void
+    public function test_remove_game_sends_correct_game_id_in_body(): void
     {
         Http::fake(['*/games/remove*' => Http::response([], 200)]);
 
         $this->client->removeGame(12);
 
-        Http::assertSent(fn(Request $r) => str_contains($r->url(), 'id=12'));
+        Http::assertSent(fn(Request $r) => $r->data()['id'] === 12);
     }
 
     // ── searchGame ─────────────────────────────────────────────────────────────
 
-    public function test_search_game_sends_correct_id(): void
+    public function test_search_game_sends_correct_id_in_body(): void
     {
         Http::fake(['*/games/search*' => Http::response(['id' => 5, 'name' => 'Celeste'], 200)]);
 
         $result = $this->client->searchGame(5);
 
-        Http::assertSent(fn(Request $r) => str_contains($r->url(), 'id=5'));
+        Http::assertSent(fn(Request $r) => $r->data()['id'] === 5);
         $this->assertSame('Celeste', $result['name']);
+    }
+
+    // ── getLastGameId ──────────────────────────────────────────────────────────
+
+    public function test_get_last_game_id_returns_id_from_response(): void
+    {
+        Http::fake(['*/lastGameId*' => Http::response(['id' => 42], 200)]);
+
+        $id = $this->client->getLastGameId();
+
+        $this->assertSame(42, $id);
+    }
+
+    public function test_get_last_game_id_sends_api_key_as_query_parameter(): void
+    {
+        Http::fake(['*/lastGameId*' => Http::response(['id' => 1], 200)]);
+
+        $this->client->getLastGameId();
+
+        Http::assertSent(fn(Request $r) => str_contains($r->url(), 'api_key=test-api-key'));
+    }
+
+    public function test_get_last_game_id_uses_get_method(): void
+    {
+        Http::fake(['*/lastGameId*' => Http::response(['id' => 1], 200)]);
+
+        $this->client->getLastGameId();
+
+        Http::assertSent(fn(Request $r) => $r->method() === 'GET');
+    }
+
+    public function test_get_last_game_id_returns_zero_when_id_missing(): void
+    {
+        Http::fake(['*/lastGameId*' => Http::response([], 200)]);
+
+        $this->assertSame(0, $this->client->getLastGameId());
+    }
+
+    // ── flushCache ─────────────────────────────────────────────────────────────
+
+    public function test_flush_cache_returns_true_on_success(): void
+    {
+        Http::fake(['*/cache/flush*' => Http::response(['success' => true], 200)]);
+
+        $this->assertTrue($this->client->flushCache());
+    }
+
+    public function test_flush_cache_sends_api_key_in_body(): void
+    {
+        Http::fake(['*/cache/flush*' => Http::response(['success' => true], 200)]);
+
+        $this->client->flushCache();
+
+        Http::assertSent(fn(Request $r) => ($r->data()['api_key'] ?? null) === 'test-api-key');
+    }
+
+    public function test_flush_cache_returns_false_when_success_not_true(): void
+    {
+        Http::fake(['*/cache/flush*' => Http::response([], 200)]);
+
+        $this->assertFalse($this->client->flushCache());
     }
 
     // ── Error handling ─────────────────────────────────────────────────────────
@@ -209,9 +259,9 @@ class GameApiClientTest extends TestCase
         new GameApiClient();
     }
 
-    // ── All requests include api_key ───────────────────────────────────────────
+    // ── All requests include api_key in body ───────────────────────────────────
 
-    public function test_all_requests_include_api_key(): void
+    public function test_all_requests_include_api_key_in_body(): void
     {
         Http::fake(['*' => Http::response([], 200)]);
 
@@ -220,6 +270,6 @@ class GameApiClientTest extends TestCase
         $this->client->removeGame(1);
 
         Http::assertSentCount(3);
-        Http::assertSent(fn(Request $r) => str_contains($r->url(), 'api_key=test-api-key'));
+        Http::assertSent(fn(Request $r) => ($r->data()['api_key'] ?? null) === 'test-api-key');
     }
 }

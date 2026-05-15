@@ -76,6 +76,13 @@ body {
   flex: 1;
 }
 
+.header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
 .header__transcript-link {
   font-size: 0.8rem;
   font-weight: 600;
@@ -86,12 +93,52 @@ body {
   padding: 0.35rem 0.75rem;
   transition: color 0.15s, border-color 0.15s;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .header__transcript-link:hover {
   color: var(--color-text);
   border-color: var(--color-primary);
+}
+
+/* ───── API status indicator ───── */
+
+.api-status {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.api-status__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+  transition: background 0.3s;
+}
+
+.api-status--ok .api-status__dot {
+  background: var(--color-success);
+  box-shadow: 0 0 6px var(--color-success);
+}
+
+.api-status--error .api-status__dot {
+  background: var(--color-danger);
+}
+
+.api-status--checking .api-status__dot {
+  background: var(--color-text-muted);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 
 .header__title {
@@ -135,6 +182,19 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.section__header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.section__header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .section__title {
@@ -150,6 +210,17 @@ body {
 
 .section__header .section__title {
   margin-bottom: 0;
+}
+
+.leaderboard-stat {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.55rem;
+  white-space: nowrap;
 }
 
 /* ───── Panel (card wrapper for form, etc.) ───── */
@@ -324,6 +395,24 @@ body {
 .steam-dropdown__item:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.steam-dropdown__item--add-custom {
+  border-top: 1px dashed var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.steam-dropdown__item--add-custom:hover {
+  border-left-color: var(--color-warning);
+  color: var(--color-text);
+}
+
+.steam-dropdown__add-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  width: 120px;
+  text-align: center;
+  color: var(--color-text-muted);
 }
 
 .steam-dropdown__custom {
@@ -674,6 +763,26 @@ body {
 .btn--ghost:hover {
   color: var(--color-text);
   background: var(--color-surface);
+}
+
+.btn--danger-ghost {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.3rem 0.6rem;
+  color: var(--color-text-muted);
+}
+
+.btn--danger-ghost:hover {
+  color: var(--color-danger);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.btn--spinning {
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .btn--small {

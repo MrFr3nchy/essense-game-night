@@ -1,10 +1,11 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AddGameForm } from './components/AddGameForm';
 import { ConfirmModal } from './components/ConfirmModal';
 import { GameList } from './components/GameList';
 import { Toast } from './components/Toast';
 import { useGames } from './hooks/useGames';
+import { api } from './api';
 import boardGameImg from './assets/board-game.jpg';
 import videoGamesImg from './assets/video_games.avif';
 import './App.css';
@@ -13,12 +14,15 @@ function App() {
   const {
     games,
     dailyAction,
+    lastGameId,
     loading,
+    fetching,
     error,
     addGame,
     vote,
     removeVote,
     removeGame,
+    resetLibrary,
     refresh,
   } = useGames();
   const [toast, setToast] = useState<{
@@ -27,7 +31,15 @@ function App() {
   } | null>(null);
 
   const [removeTarget, setRemoveTarget] = useState<{ id: number; name: string } | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'video' | 'board'>('video');
+  const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'error'>('checking');
+
+  useEffect(() => {
+    api.health()
+      .then(r => setApiStatus(r.api ? 'ok' : 'error'))
+      .catch(() => setApiStatus('error'));
+  }, []);
 
   const [overwatchStep, setOverwatchStep] = useState<0 | 1 | 2 | 3>(0);
   const [pendingOverwatchId, setPendingOverwatchId] = useState<number | null>(null);
@@ -72,7 +84,6 @@ function App() {
         message: err instanceof Error ? err.message : 'Failed to vote.',
         type: 'error',
       });
-      throw err;
     }
   };
 
@@ -106,11 +117,9 @@ function App() {
       setToast({ message: 'Vote removed.', type: 'success' });
     } catch (err) {
       setToast({
-        message:
-          err instanceof Error ? err.message : 'Failed to remove vote.',
+        message: err instanceof Error ? err.message : 'Failed to remove vote.',
         type: 'error',
       });
-      throw err;
     }
   };
 
@@ -128,6 +137,19 @@ function App() {
     } catch (err) {
       setToast({
         message: err instanceof Error ? err.message : 'Failed to remove game.',
+        type: 'error',
+      });
+    }
+  };
+
+  const handleReset = async () => {
+    setResetOpen(false);
+    try {
+      await resetLibrary();
+      setToast({ message: 'Library cleared.', type: 'success' });
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to reset library.',
         type: 'error',
       });
     }
@@ -157,9 +179,19 @@ function App() {
               Vote on games for the office library
             </p>
           </div>
-          <Link to="/transcript" className="header__transcript-link">
-            Build Log
-          </Link>
+          <div className="header__actions">
+            <span
+              className={`api-status api-status--${apiStatus}`}
+              title={apiStatus === 'ok' ? 'Challenge API: online' : apiStatus === 'error' ? 'Challenge API: unreachable' : 'Checking API…'}
+              aria-label={`API status: ${apiStatus}`}
+            >
+              <span className="api-status__dot" />
+              <span className="api-status__label">API</span>
+            </span>
+            <Link to="/transcript" className="header__transcript-link">
+              Build Log
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -199,15 +231,32 @@ function App() {
 
         <section className="section">
           <div className="section__header">
-            <h2 className="section__title">Leaderboard</h2>
-            <button
-              className="btn btn--ghost"
-              onClick={refresh}
-              disabled={loading}
-              aria-label="Refresh game list"
-            >
-              ↻
-            </button>
+            <div className="section__header-left">
+              <h2 className="section__title">Leaderboard</h2>
+              {lastGameId > 0 && (
+                <span className="leaderboard-stat" title="Total games ever suggested (including removed)">
+                  {lastGameId} all-time
+                </span>
+              )}
+            </div>
+            <div className="section__header-right">
+              <button
+                className="btn btn--ghost btn--danger-ghost"
+                onClick={() => setResetOpen(true)}
+                title="Clear all games from the library"
+                aria-label="Reset library"
+              >
+                ⌫ Reset
+              </button>
+              <button
+                className={`btn btn--ghost${fetching ? ' btn--spinning' : ''}`}
+                onClick={refresh}
+                disabled={loading || fetching}
+                aria-label="Refresh game list"
+              >
+                ↻
+              </button>
+            </div>
           </div>
 
           {loading ? (
@@ -266,6 +315,17 @@ function App() {
           preventDismiss
         />
       )}
+
+      <ConfirmModal
+        open={resetOpen}
+        title="Reset the entire library?"
+        message="This permanently removes every game and all votes. There is no undo."
+        confirmLabel="Yes, clear everything"
+        cancelLabel="Cancel"
+        onConfirm={handleReset}
+        onCancel={() => setResetOpen(false)}
+        danger
+      />
     </div>
   );
 }

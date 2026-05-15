@@ -34,28 +34,30 @@ export function AddGameForm({ onAdd, disabled, mode }: AddGameFormProps) {
 
     abortRef.current?.abort();
     abortRef.current = new AbortController();
+    const { signal } = abortRef.current;
 
     setSearching(true);
     setNoResults(false);
 
     try {
       if (currentMode === 'board') {
-        const data = await api.searchBoardGames(term.trim());
+        const data = await api.searchBoardGames(term.trim(), signal);
         const items = (data.items ?? []).map((item): SearchResult => ({ kind: 'board', item }));
         setResults(items);
         setNoResults(items.length === 0);
       } else {
-        const data = await api.searchSteam(term.trim());
+        const data = await api.searchSteam(term.trim(), signal);
         const items = (data.items ?? []).map((item): SearchResult => ({ kind: 'steam', item }));
         setResults(items);
         setNoResults(items.length === 0);
       }
       setShowDropdown(true);
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
       setResults([]);
       setNoResults(false);
     } finally {
-      setSearching(false);
+      if (!signal.aborted) setSearching(false);
     }
   }, []);
 
@@ -161,9 +163,18 @@ export function AddGameForm({ onAdd, disabled, mode }: AddGameFormProps) {
       {showDropdown && (
         <div className="steam-dropdown">
           {noResults ? (
-            <div className="steam-dropdown__empty">
-              No {mode === 'board' ? 'board games' : 'games'} found for &ldquo;{query.trim()}&rdquo;
-            </div>
+            <button
+              type="button"
+              className="steam-dropdown__item steam-dropdown__item--add-custom"
+              onClick={() => submit(query.trim(), 0)}
+              disabled={disabled || submitting}
+            >
+              <span className="steam-dropdown__add-icon">＋</span>
+              <div className="steam-dropdown__info">
+                <span className="steam-dropdown__name">Add &ldquo;{query.trim()}&rdquo;</span>
+                <span className="steam-dropdown__meta">No search results — add as custom title</span>
+              </div>
+            </button>
           ) : (
             results.map((result) => {
               const key = result.kind === 'steam' ? result.item.id : `board-${result.item.id}`;

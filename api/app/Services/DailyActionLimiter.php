@@ -10,9 +10,9 @@ class DailyActionLimiter
      * Check whether the user has already performed their daily action.
      * Each user gets ONE action per calendar day: either adding a game or voting.
      */
-    public function hasActedToday(string $userId): bool
+    public function hasActedToday(?string $userId): bool
     {
-        if (config('services.app.allow_unlimited_actions')) {
+        if (!$userId || config('services.app.allow_unlimited_actions')) {
             return false;
         }
 
@@ -22,8 +22,10 @@ class DailyActionLimiter
     /**
      * Record that the user performed an action (add or vote).
      */
-    public function recordAction(string $userId, string $actionType, int $gameId): void
+    public function recordAction(?string $userId, string $actionType, int $gameId): void
     {
+        if (!$userId) return;
+
         Cache::put($this->cacheKey($userId), [
             'action' => $actionType,
             'game_id' => $gameId,
@@ -34,9 +36,9 @@ class DailyActionLimiter
     /**
      * Get the action the user performed today, if any.
      */
-    public function getTodayAction(string $userId): ?array
+    public function getTodayAction(?string $userId): ?array
     {
-        if (config('services.app.allow_unlimited_actions')) {
+        if (!$userId || config('services.app.allow_unlimited_actions')) {
             return null;
         }
 
@@ -46,8 +48,10 @@ class DailyActionLimiter
     /**
      * Clear the user's daily action (e.g. when undoing a vote or removing an added game).
      */
-    public function clearAction(string $userId): void
+    public function clearAction(?string $userId): void
     {
+        if (!$userId) return;
+
         Cache::forget($this->cacheKey($userId));
     }
 

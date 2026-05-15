@@ -18,6 +18,8 @@ The Laravel backend acts as a proxy to the external Essense API and enforces bus
 - **Daily action rule**: one action (vote OR add) per calendar day per user, enforced server-side with Laravel's cache. If a user undoes their action (unvotes or removes a game they added today), their daily action is refunded.
 - **Duplicate detection**: case-insensitive title comparison happens on the backend before calling the external API.
 - **Error handling**: every API error surfaces as a user-friendly toast or inline message — no silent failures.
+- **Zero-config API key**: on first `docker-compose up`, the container calls `GET /api-key` on the Essense challenge API and writes the generated key to `api/.env` automatically. No manual setup required.
+- **Full API surface**: all six Essense endpoints are used. `GET /cache/health` powers the live status indicator in the UI header. `POST /cache/flush` backs the "Reset library" admin button. `GET /lastGameId` provides the all-time suggestion count in the leaderboard.
 
 ## Running locally with Docker
 
@@ -27,12 +29,7 @@ The Laravel backend acts as a proxy to the external Essense API and enforces bus
 cp api/.env.example api/.env
 ```
 
-Open `api/.env` and fill in the two required values:
-
-```
-ESSENSE_API_KEY=   # your key from https://codechallenge.essensedesigns.info/docs
-APP_KEY=           # leave blank — auto-generated on first start
-```
+`ESSENSE_API_KEY` is **auto-fetched on first start** — you can leave it blank. `APP_KEY` is also generated automatically. No manual editing required unless you already have a specific key you want to use.
 
 ### 2 (Optional). Install frontend dependencies locally (for IDE type-checking)
 
@@ -128,9 +125,11 @@ Required environment variables in `api/.env.production`:
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/games` | List all games (sorted by votes desc) |
+| `GET` | `/api/health` | Essense API connectivity status (no auth) |
+| `GET` | `/api/games` | List all games (sorted by votes desc) + all-time count |
 | `POST` | `/api/games` | Add a new game |
 | `POST` | `/api/games/{id}/vote` | Vote for a game |
 | `DELETE` | `/api/games/{id}/vote` | Remove your vote |
 | `DELETE` | `/api/games/{id}` | Remove a game |
 | `GET` | `/api/me` | Current user status + daily action |
+| `POST` | `/api/reset` | Flush all game data (calls Essense `/cache/flush`) |

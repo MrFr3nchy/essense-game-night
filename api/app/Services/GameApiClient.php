@@ -26,15 +26,9 @@ class GameApiClient
         return $this->post('/games/list')['games'] ?? [];
     }
 
-    public function addGame(string $name, ?int $steamAppId = null): array
+    public function addGame(string $name): array
     {
-        $params = ['name' => $name];
-
-        if ($steamAppId) {
-            $params['steam_app_id'] = $steamAppId;
-        }
-
-        return $this->post('/games/add', $params);
+        return $this->post('/games/add', ['name' => $name]);
     }
 
     public function searchGame(int $id): array
@@ -57,6 +51,46 @@ class GameApiClient
         return $this->post('/games/removeVote', ['id' => $id]);
     }
 
+    /**
+     * GET /lastGameId — returns the highest game ID ever assigned.
+     * Useful as a cumulative "total suggestions" counter.
+     */
+    public function getLastGameId(): int
+    {
+        $result = $this->get('/lastGameId', ['api_key' => $this->apiKey]);
+        return $result['id'] ?? 0;
+    }
+
+    /**
+     * POST /cache/flush — clears all game data for this API key.
+     */
+    public function flushCache(): bool
+    {
+        $result = $this->post('/cache/flush');
+        return ($result['success'] ?? false) === true;
+    }
+
+    private function get(string $endpoint, array $query = []): array
+    {
+        try {
+            $response = Http::timeout(10)
+                ->withQueryParameters($query)
+                ->get($this->baseUrl . $endpoint);
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Unable to reach the game API. Please try again later.');
+        }
+
+        if ($response->failed()) {
+            $error = $response->json();
+            $message = is_array($error)
+                ? ($error['error'] ?? $error['message'] ?? 'The game API returned an error.')
+                : 'The game API returned an error.';
+            throw new RuntimeException($message, $response->status());
+        }
+
+        return $response->json() ?? [];
+    }
+
     private function post(string $endpoint, array $data = []): array
     {
         $query = array_merge(['api_key' => $this->apiKey], $data);
@@ -70,8 +104,8 @@ class GameApiClient
         }
 
         if ($response->failed()) {
-            $body = $response->json();
-            $message = $body['error'] ?? $body['message'] ?? 'The game API returned an error.';
+            $error = $response->json();
+            $message = $error['error'] ?? $error['message'] ?? 'The game API returned an error.';
             throw new RuntimeException($message, $response->status());
         }
 

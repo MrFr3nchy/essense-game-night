@@ -15,6 +15,12 @@ export interface DailyAction {
 export interface GamesResponse {
   games: Game[];
   daily_action: DailyAction | null;
+  last_game_id: number;
+}
+
+export interface HealthResponse {
+  status: 'ok' | 'degraded' | 'error';
+  api: boolean;
 }
 
 export interface SteamSearchItem {

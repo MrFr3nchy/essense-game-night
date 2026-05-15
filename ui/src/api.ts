@@ -1,4 +1,4 @@
-import type { BoardGameItem, GamesResponse, SteamSearchItem } from './types';
+import type { BoardGameItem, GamesResponse, HealthResponse, SteamSearchItem } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -6,11 +6,13 @@ class ApiClient {
   private async request<T>(
     path: string,
     options: RequestInit = {},
+    signal?: AbortSignal,
   ): Promise<T> {
     const url = `${BASE_URL}${path}`;
 
     const response = await fetch(url, {
       credentials: 'include',
+      signal,
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
@@ -57,15 +59,27 @@ class ApiClient {
     });
   }
 
-  searchSteam(term: string) {
+  health() {
+    return this.request<HealthResponse>('/health');
+  }
+
+  resetLibrary() {
+    return this.request<{ message: string }>('/reset', { method: 'POST' });
+  }
+
+  searchSteam(term: string, signal?: AbortSignal) {
     return this.request<{ items: SteamSearchItem[] }>(
       `/steam/search?term=${encodeURIComponent(term)}`,
+      {},
+      signal,
     );
   }
 
-  searchBoardGames(term: string) {
+  searchBoardGames(term: string, signal?: AbortSignal) {
     return this.request<{ items: BoardGameItem[] }>(
       `/board-games/search?term=${encodeURIComponent(term)}`,
+      {},
+      signal,
     );
   }
 }

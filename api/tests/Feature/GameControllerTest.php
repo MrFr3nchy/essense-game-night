@@ -31,6 +31,7 @@ class GameControllerTest extends TestCase
     {
         $mock = $this->mockApi();
         $mock->shouldReceive('listGames')->andReturn($games);
+        $mock->shouldReceive('getLastGameId')->andReturn(0);
         return $mock;
     }
 
@@ -104,7 +105,7 @@ class GameControllerTest extends TestCase
     {
         $mock = $this->mockApi();
         $mock->shouldReceive('listGames')->once()->andReturn([]);
-        $mock->shouldReceive('addGame')->once()->with('Hades', null)->andReturn(['id' => 10]);
+        $mock->shouldReceive('addGame')->once()->with('Hades')->andReturn(['id' => 10]);
 
         $response = $this->postJson('/api/games', [
             'voter_id' => self::VOTER,
@@ -131,7 +132,7 @@ class GameControllerTest extends TestCase
     {
         $mock = $this->mockApi();
         $mock->shouldReceive('listGames')->andReturn([]);
-        $mock->shouldReceive('addGame')->with('Hades', 1145360)->andReturn(['id' => 10]);
+        $mock->shouldReceive('addGame')->with('Hades')->andReturn(['id' => 10]);
 
         $this->postJson('/api/games', [
             'voter_id' => self::VOTER,
@@ -312,6 +313,67 @@ class GameControllerTest extends TestCase
         $response = $this->deleteJson('/api/games/999', ['voter_id' => self::VOTER]);
 
         $response->assertStatus(404);
+    }
+
+    // ── POST /api/reset ────────────────────────────────────────────────────────
+
+    public function test_reset_flushes_essense_cache_and_returns_success(): void
+    {
+        $mock = $this->mockApi();
+        $mock->shouldReceive('flushCache')->once()->andReturn(true);
+
+        $response = $this->postJson('/api/reset', ['voter_id' => self::VOTER]);
+
+        $response->assertOk()
+            ->assertJsonFragment(['message' => 'Library reset. All games have been cleared.']);
+    }
+
+    public function test_reset_clears_local_cache(): void
+    {
+        $mock = $this->mockApi();
+        $mock->shouldReceive('flushCache')->andReturn(true);
+
+        app(DailyActionLimiter::class)->recordAction(self::VOTER, 'vote', 1);
+        $this->assertTrue(app(DailyActionLimiter::class)->hasActedToday(self::VOTER));
+
+        $this->postJson('/api/reset', ['voter_id' => self::VOTER]);
+
+        // Cache::flush() clears everything including daily action entries.
+        $this->assertFalse(app(DailyActionLimiter::class)->hasActedToday(self::VOTER));
+    }
+
+    public function test_reset_returns_502_when_api_client_throws(): void
+    {
+        $mock = $this->mockApi();
+        $mock->shouldReceive('flushCache')->andThrow(new \RuntimeException('API error', 502));
+
+        $response = $this->postJson('/api/reset', ['voter_id' => self::VOTER]);
+
+        $response->assertStatus(502);
+    }
+
+    // ── GET /api/games includes last_game_id ───────────────────────────────────
+
+    public function test_index_includes_last_game_id_in_response(): void
+    {
+        $mock = $this->mockApi();
+        $mock->shouldReceive('listGames')->andReturn([]);
+        $mock->shouldReceive('getLastGameId')->andReturn(17);
+
+        $response = $this->getJson('/api/games?voter_id=' . self::VOTER);
+
+        $response->assertOk()->assertJsonFragment(['last_game_id' => 17]);
+    }
+
+    public function test_index_returns_last_game_id_zero_when_api_call_fails(): void
+    {
+        $mock = $this->mockApi();
+        $mock->shouldReceive('listGames')->andReturn([]);
+        $mock->shouldReceive('getLastGameId')->andThrow(new \RuntimeException('Unavailable'));
+
+        $response = $this->getJson('/api/games?voter_id=' . self::VOTER);
+
+        $response->assertOk()->assertJsonFragment(['last_game_id' => 0]);
     }
 
     // ── GET /api/me ────────────────────────────────────────────────────────────

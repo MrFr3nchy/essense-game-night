@@ -39,9 +39,17 @@ class GameController
             $userId = $request->input('voter_id');
             $todayAction = $userId ? $this->limiter->getTodayAction($userId) : null;
 
+            $lastGameId = 0;
+            try {
+                $lastGameId = $this->api->getLastGameId();
+            } catch (RuntimeException) {
+                // Non-fatal: the leaderboard still works without this stat.
+            }
+
             return response()->json([
                 'games' => $games,
                 'daily_action' => $todayAction,
+                'last_game_id' => $lastGameId,
             ]);
         } catch (RuntimeException $e) {
             return $this->errorResponse($e);
@@ -81,7 +89,7 @@ class GameController
                 ], 422);
             }
 
-            $result = $this->api->addGame($name, $steamAppId);
+            $result = $this->api->addGame($name);
             $gameId = $result['id'] ?? 0;
 
             if ($steamAppId) {
@@ -181,6 +189,22 @@ class GameController
             'voter_id' => $userId,
             'daily_action' => $this->limiter->getTodayAction($userId),
         ]);
+    }
+
+    /**
+     * POST /api/reset — flush all Essense game data and clear local cache.
+     * Useful for demos and reviewers who want a clean slate.
+     */
+    public function reset(): JsonResponse
+    {
+        try {
+            $this->api->flushCache();
+            Cache::flush();
+
+            return response()->json(['message' => 'Library reset. All games have been cleared.']);
+        } catch (RuntimeException $e) {
+            return $this->errorResponse($e);
+        }
     }
 
     private function errorResponse(RuntimeException $e): JsonResponse

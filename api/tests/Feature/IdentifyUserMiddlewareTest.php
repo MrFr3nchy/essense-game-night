@@ -13,6 +13,7 @@ class IdentifyUserMiddlewareTest extends TestCase
         parent::setUp();
         $mock = $this->mock(GameApiClient::class);
         $mock->shouldReceive('listGames')->andReturn([]);
+        $mock->shouldReceive('getLastGameId')->andReturn(0);
     }
 
     // ── Cookie assignment ──────────────────────────────────────────────────────
