@@ -114,22 +114,3 @@ Required environment variables in `api/.env.production`:
 | `ESSENSE_API_KEY` | Your challenge API key |
 | `FRONTEND_URL` | Your deployed frontend URL (required for CORS) |
 | `APP_DEBUG` | Must be `false` in production |
-
-### Deploying the frontend to Vercel
-
-1. Import the `ui/` directory as a new Vercel project.
-2. Set `VITE_API_URL` to your deployed API URL.
-3. Vercel auto-detects Vite and builds correctly.
-
-## API endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/health` | Essense API connectivity status (no auth) |
-| `GET` | `/api/games` | List all games (sorted by votes desc) + all-time count |
-| `POST` | `/api/games` | Add a new game |
-| `POST` | `/api/games/{id}/vote` | Vote for a game |
-| `DELETE` | `/api/games/{id}/vote` | Remove your vote |
-| `DELETE` | `/api/games/{id}` | Remove a game |
-| `GET` | `/api/me` | Current user status + daily action |
-| `POST` | `/api/reset` | Flush all game data (calls Essense `/cache/flush`) |
