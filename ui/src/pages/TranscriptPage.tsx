@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
-import transcriptContent from '../../public/transcript.md?raw';
+import transcriptContent from '../transcript.md?raw';
 import '../App.css';
 
 const components: Components = {

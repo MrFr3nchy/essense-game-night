@@ -30,11 +30,21 @@ cp api/.env.example api/.env
 Open `api/.env` and fill in the two required values:
 
 ```
-ESSENSE_API_KEY=   # your key from the challenge portal
+ESSENSE_API_KEY=   # your key from https://codechallenge.essensedesigns.info/docs
 APP_KEY=           # leave blank — auto-generated on first start
 ```
 
-### 2. Start everything
+### 2 (Optional). Install frontend dependencies locally (for IDE type-checking)
+
+The Docker setup stores `node_modules` inside a named volume, so the IDE TypeScript server won't find types unless you also install them on the host:
+
+```bash
+cd ui && npm install && cd ..
+```
+
+This is a one-time step — you don't need to re-run it unless `package.json` changes and it is not needed to start the project.
+
+### 3. Start everything
 
 ```bash
 docker-compose up --build
